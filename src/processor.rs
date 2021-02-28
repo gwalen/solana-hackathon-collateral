@@ -74,25 +74,6 @@ impl Processor {
             return Err(ProgramError::IncorrectProgramId);
         }
 
-        // let escrow_account = next_account_info(account_info_iter)?;
-
-        // if !rent.is_exempt(escrow_account.lamports(), escrow_account.data_len()) {
-        //     return Err(EscrowError::NotRentExempt.into());
-        // }
-        // let mut escrow_info = Escrow::unpack_unchecked(&escrow_account.data.borrow())?;  //TODO
-        // if escrow_info.is_initialized() {
-        //     return Err(ProgramError::AccountAlreadyInitialized);
-        // }
-        // escrow_info.is_initialized = true;
-        // escrow_info.initializer_pubkey = *client_account.key;
-        // escrow_info.temp_token_account_pubkey = *cap_token_mint_account.key;
-        // escrow_info.initializer_token_to_receive_account_pubkey = *token_to_receive_account.key;
-        // escrow_info.expected_amount = amount_sol;
-        //
-        // Escrow::pack(escrow_info, &mut escrow_account.data.borrow_mut())?;
-        // let (pda, _nonce) = Pubkey::find_program_address(&[b"escrow"], program_id);
-
-
         // Transfer SOL from client to program
         let transfer_sol_to_program_ix = spl_token::instruction::transfer(
             token_program.key,
@@ -113,32 +94,28 @@ impl Processor {
             ],
         )?;
 
-        //TODO: if it's sol maybe we just use this : and no token transaction is necessary ?
-        // Withdraw five lamports from the source - but program is not owner of that account ?
-        // **client_account.try_borrow_mut_lamports()? -= 5;
-
         // Transfer CAP from program to client
         let client_collateralized_cap: u64 = (amount_sol as f64 / COLLATERAL_RATIO).round() as u64;
         msg!("Send {} cap to client", client_collateralized_cap);
-        // let transfer_cap_to_client_ix = spl_token::instruction::transfer(
-        //     token_program.key,
-        //     collateral_cap_account.key,
-        //     client_cap_account.key,
-        //     &pda,
-        //     &[&pda],
-        //     client_collateralized_cap,
-        // )?;
-        // msg!("Calling the token program to transfer tokens to the taker...");
-        // invoke_signed(  //TODO : difference between invoke and invoke_signed
-        //     &transfer_cap_to_client_ix,
-        //                 &[
-        //         pdas_temp_token_account.clone(),
-        //         collateral_cap_account.clone(),
-        //         client_cap_account.clone(),
-        //         token_program.clone(),
-        //     ],
-        //                 &[&[&b"cap-collateral"[..], &[nonce]]],
-        // )?;
+        let transfer_cap_to_client_ix = spl_token::instruction::transfer(
+            token_program.key,
+            collateral_cap_account.key,
+            client_cap_account.key,
+            &pda,
+            &[&pda],
+            client_collateralized_cap,
+        )?;
+        msg!("Calling the token program to transfer tokens to the taker...");
+        invoke_signed(
+            &transfer_cap_to_client_ix,
+                        &[
+                pdas_temp_token_account.clone(),
+                collateral_cap_account.clone(),
+                client_cap_account.clone(),
+                token_program.clone(),
+            ],
+                        &[&[&b"cap-collateral"[..], &[nonce]]],
+        )?;
 
         Ok(())
     }
