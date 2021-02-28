@@ -137,7 +137,7 @@ impl Processor {
         //         client_cap_account.clone(),
         //         token_program.clone(),
         //     ],
-        //                 &[&[&b"escrow"[..], &[nonce]]],
+        //                 &[&[&b"cap-collateral"[..], &[nonce]]],
         // )?;
 
         Ok(())
